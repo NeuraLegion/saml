@@ -112,9 +112,13 @@ func (e CBC) Decrypt(key interface{}, ciphertextEl *etree.Element) ([]byte, erro
 	if len(ciphertext) < block.BlockSize() {
 		return nil, errors.New("ciphertext too short")
 	}
+	blockSize := block.BlockSize()
+	if (len(ciphertext)-blockSize)%blockSize != 0 {
+		return nil, errors.New("ciphertext is not a multiple of the block size")
+	}
 
-	iv := ciphertext[:aes.BlockSize]
-	ciphertext = ciphertext[aes.BlockSize:]
+	iv := ciphertext[:blockSize]
+	ciphertext = ciphertext[blockSize:]
 
 	mode := cipher.NewCBCDecrypter(block, iv)
 	plaintext := make([]byte, len(ciphertext))
