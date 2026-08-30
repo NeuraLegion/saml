@@ -118,6 +118,9 @@ func (e GCM) Decrypt(key interface{}, ciphertextEl *etree.Element) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
+	if len(ciphertext) < aesgcm.NonceSize() {
+		return nil, fmt.Errorf("ciphertext is too short")
+	}
 
 	nonce := ciphertext[:aesgcm.NonceSize()]
 	text := ciphertext[aesgcm.NonceSize():]
