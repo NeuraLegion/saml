@@ -394,13 +394,19 @@ func NewIdpAuthnRequest(idp *IdentityProvider, r *http.Request) (*IdpAuthnReques
 // the AuthnRequest and Metadata properties. Returns a non-nil error if the
 // request is not valid.
 func (req *IdpAuthnRequest) Validate() error {
+	// Parse the input with encoding/xml before passing it to the round-trip
+	// validator.  The standard parser rejects malformed XML characters (and
+	// other malformed input) without allowing the validator to process them.
+	var request AuthnRequest
+	if err := xml.Unmarshal(req.RequestBuffer, &request); err != nil {
+		return err
+	}
+
 	if err := xrv.Validate(bytes.NewReader(req.RequestBuffer)); err != nil {
 		return err
 	}
 
-	if err := xml.Unmarshal(req.RequestBuffer, &req.Request); err != nil {
-		return err
-	}
+	req.Request = request
 
 	// We always have exactly one IDP SSO descriptor
 	if len(req.IDP.Metadata().IDPSSODescriptors) != 1 {
@@ -440,6 +446,10 @@ func (req *IdpAuthnRequest) Validate() error {
 	}
 	if req.Request.Version != "2.0" {
 		return fmt.Errorf("expected SAML request version 2.0 got %v", req.Request.Version)
+	}
+
+	if req.Request.Issuer == nil {
+		return fmt.Errorf("authentication request is missing an issuer")
 	}
 
 	// find the service provider
