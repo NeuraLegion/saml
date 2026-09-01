@@ -442,6 +442,10 @@ func (req *IdpAuthnRequest) Validate() error {
 		return fmt.Errorf("expected SAML request version 2.0 got %v", req.Request.Version)
 	}
 
+	if req.Request.Issuer == nil {
+		return fmt.Errorf("authentication request is missing an issuer")
+	}
+
 	// find the service provider
 	serviceProviderID := req.Request.Issuer.Value
 	serviceProvider, err := req.IDP.ServiceProviderProvider.GetServiceProvider(req.HTTPRequest, serviceProviderID)
